@@ -58,7 +58,7 @@ export default function BookmarkPage() {
     }
 
     
-    
+    console.log("hii");
     window.location.reload(); 
     
   } catch (err) {
