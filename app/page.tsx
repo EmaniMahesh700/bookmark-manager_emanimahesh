@@ -78,7 +78,7 @@ export default function BookmarkPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
               </svg>
             </div>
-            <h1 className="text-4xl font-black text-white mb-3 tracking-tight">Vault</h1>
+            <h1 className="text-4xl font-black text-white mb-3 tracking-tight">Bookmarks</h1>
             <p className="text-slate-400 text-lg mb-10 max-w-sm">Securely store and organize your most important web links.</p>
             <button 
               onClick={login} 
@@ -92,7 +92,7 @@ export default function BookmarkPage() {
             
             <div className="flex justify-between items-center px-2">
               <div>
-                <h1 className="text-3xl font-black text-white tracking-tighter italic">VAULT.</h1>
+                <h1 className="text-3xl font-black text-white tracking-tighter italic">Bookmarks.</h1>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
                   <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">{bookmarks.length} Saved Items</p>
@@ -139,7 +139,7 @@ export default function BookmarkPage() {
                   : 'bg-slate-900 hover:bg-indigo-600 text-white shadow-xl shadow-indigo-200/20 active:scale-[0.99]'
                 }`}
               >
-                {isSubmitting ? "Syncing..." : "Add to Library"}
+                {isSubmitting ? "Syncing..." : "Add Bookmark"}
               </button>
             </form>
 
