@@ -9,8 +9,8 @@ export function createClient() {
   // we provide a fallback so the build doesn't crash.
   if (!url || !key) {
     return createBrowserClient(
-      "https://placeholder-url.supabase.co", 
-      "placeholder-key"
+      "https://zgsmssdehbfnhbqigaze.supabase.co", 
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpnc21zc2RlaGJmbmhicWlnYXplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzMTc2NjMsImV4cCI6MjA4Njg5MzY2M30.B-dnpuSg4pBm_6Z5HDoZIqBUSo2PfSjt4noPm0Ll7A4"
     )
   }
 
