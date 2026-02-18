@@ -110,12 +110,12 @@ export default function BookmarkPage() {
 
   // ✅ Google login
   const login = () =>
-    supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
+  supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: window.location.origin,
+    },
+  });
 
   const logout = () => supabase.auth.signOut();
 
