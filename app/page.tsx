@@ -22,7 +22,15 @@ export default function BookmarkPage() {
 
   useEffect(() => {
     let channel: any;
+const getSession = async () => {
+    const { data } = await supabase.auth.getSession();
 
+    if (data.session) {
+      setUser(data.session.user);
+    }
+  };
+
+  getSession();
     const fetchBookmarks = async () => {
       const { data, error } = await supabase
         .from("bookmarks")
