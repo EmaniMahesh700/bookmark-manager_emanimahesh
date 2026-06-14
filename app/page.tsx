@@ -12,6 +12,7 @@ interface Bookmark {
   category?: string;
   notes?: string;
   is_public?: boolean;
+  clicks?: number; // Added to support future metrics tracking
 }
 
 const supabase = createClient();
@@ -25,6 +26,7 @@ export default function BookmarkPage() {
   const [notes, setNotes] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isScraping, setIsScraping] = useState(false);
 
   useEffect(() => {
     const initialize = async () => {
@@ -40,6 +42,46 @@ export default function BookmarkPage() {
     };
     initialize();
   }, []);
+
+  // --- Dual-Action Automated Metadata Scraper Handler ---
+  const handleUrlChangeAndScrape = async (inputUrl: string) => {
+    setUrl(inputUrl);
+
+    // Only run if it looks like a completed link protocol
+    if (!inputUrl.startsWith("http://") && !inputUrl.startsWith("https://")) {
+      return;
+    }
+
+    // 1. INSTANT CLIENT FALLBACK: Extract domain name immediately so fields never stay blank
+    try {
+      const domain = new URL(inputUrl).hostname.replace("www.", "");
+      const cleanName = domain.split('.')[0];
+      const fallbackTitle = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+      setTitle(fallbackTitle);
+    } catch (e) {
+      console.log("Parsing initial clean name failed");
+    }
+
+    // 2. BACKGROUND CRAWLER UPGRADE: Fetch real HTML tag details from the API route
+    setIsScraping(true);
+    try {
+      const res = await fetch("/api/scrape", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: inputUrl }),
+      });
+      
+      const data = await res.json();
+      
+      // If server succeeds and finds richer text tags, overwrite the fallback title
+      if (data.title) setTitle(data.title);
+      if (data.description) setNotes(data.description);
+    } catch (err) {
+      console.error("Server scraper firewall blocked or route missing. Keeping client title fallback.", err);
+    } finally {
+      setIsScraping(false);
+    }
+  };
 
   const addBookmark = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,11 +114,9 @@ export default function BookmarkPage() {
     }
   };
 
-  // --- Fixed Type-Safe Toggle Public Status Function ---
   const togglePublicStatus = async (id: string, currentStatus: boolean) => {
     const nextStatus = !currentStatus;
     
-    // 1. Instantly update the backend Supabase database
     const { error } = await supabase
       .from("bookmarks")
       .update({ is_public: nextStatus })
@@ -88,7 +128,6 @@ export default function BookmarkPage() {
       return;
     }
     
-    // 2. Reactively update the local client state arrays
     setBookmarks((prev) =>
       prev.map((bm) => (bm.id === id ? { ...bm, is_public: nextStatus } : bm))
     );
@@ -174,6 +213,8 @@ export default function BookmarkPage() {
 
   const totalCount = bookmarks.length;
   const uncategorizedCount = bookmarks.filter(bm => !bm.category || bm.category === "").length;
+  const totalClicks = bookmarks.reduce((acc, bm) => acc + (Number(bm.clicks) || 0), 0);
+  
   const topCategory = (() => {
     if (totalCount === 0) return "None";
     const counts: { [key: string]: number } = {};
@@ -224,10 +265,14 @@ export default function BookmarkPage() {
 
             {/* Analytics Grid */}
             {bookmarks.length > 0 && (
-              <div className="grid grid-cols-3 gap-4 px-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-2">
                 <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-center backdrop-blur-md">
-                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">Total</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">Total Links</p>
                   <p className="text-2xl font-black text-white mt-1">{totalCount}</p>
+                </div>
+                <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-center backdrop-blur-md">
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">Total Reach</p>
+                  <p className="text-xl font-black text-emerald-400 mt-2 truncate">📈 {totalClicks} clicks</p>
                 </div>
                 <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-center backdrop-blur-md truncate">
                   <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">Top Topic</p>
@@ -257,11 +302,25 @@ export default function BookmarkPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">Title</label>
-                  <input type="text" placeholder="Project Inspiration" value={title} onChange={(e) => setTitle(e.target.value)} required className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-medium" />
+                  <input 
+                    type="text" 
+                    placeholder="Project Inspiration" 
+                    value={title} 
+                    onChange={(e) => setTitle(e.target.value)} 
+                    required 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-medium" 
+                  />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">URL</label>
-                  <input type="url" placeholder="https://..." value={url} onChange={(e) => setUrl(e.target.value)} required className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-medium" />
+                  <input 
+                    type="url" 
+                    placeholder="https://..." 
+                    value={url} 
+                    onChange={(e) => handleUrlChangeAndScrape(e.target.value)} 
+                    required 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-medium" 
+                  />
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">Category</label>
@@ -275,7 +334,13 @@ export default function BookmarkPage() {
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">Notes / Description</label>
-                  <textarea placeholder="Add a quick summary..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-medium resize-none" />
+                  <textarea 
+                    placeholder={isScraping ? "Fetching layout insights..." : "Add a quick summary..."} 
+                    value={notes} 
+                    onChange={(e) => setNotes(e.target.value)} 
+                    rows={2} 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-medium resize-none" 
+                  />
                 </div>
               </div>
               <button type="submit" disabled={isSubmitting} className="w-full py-4 rounded-2xl font-black uppercase tracking-[0.3em] text-white bg-slate-900 hover:bg-indigo-600 text-xs transition-all">
@@ -308,7 +373,6 @@ export default function BookmarkPage() {
                   </div>
                   
                   <div className="flex gap-1 shrink-0">
-                    {/* Public/Private Status Toggle Slider Button */}
                     <button onClick={() => togglePublicStatus(bm.id, !!bm.is_public)} className={`p-3 rounded-xl transition-all ${bm.is_public ? 'text-emerald-400 bg-emerald-500/5' : 'text-slate-500 hover:text-white'}`} title={bm.is_public ? "Make Private" : "Make Public"}>
                       {bm.is_public ? "🔓" : "🔒"}
                     </button>
