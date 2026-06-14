@@ -10,6 +10,7 @@ interface Bookmark {
   url: string;
   category?: string;
   notes?: string;
+  clicks?: number; // Tracks current database click counts
 }
 
 const supabase = createClient();
@@ -23,9 +24,10 @@ export default function SharedLibraryPage() {
     const fetchSharedBookmarks = async () => {
       if (!userId) return;
       
+      // Added 'clicks' field data extraction parameter to row mapping selector
       const { data, error } = await supabase
         .from("bookmarks")
-        .select("id, title, url, category, notes")
+        .select("id, title, url, category, notes, clicks")
         .eq("user_id", userId)
         .eq("is_public", true) // Only grab bookmarks marked public!
         .order("created_at", { ascending: false });
@@ -38,6 +40,13 @@ export default function SharedLibraryPage() {
 
     fetchSharedBookmarks();
   }, [userId]);
+
+  const registerLinkClick = async (bookmarkId: string, currentClicks: number) => {
+    await supabase
+      .from("bookmarks")
+      .update({ clicks: (currentClicks || 0) + 1 })
+      .eq("id", bookmarkId);
+  };
 
   if (loading) {
     return (
@@ -61,23 +70,41 @@ export default function SharedLibraryPage() {
         <div className="space-y-4">
           {bookmarks.map((bm) => (
             <div key={bm.id} className="p-6 bg-white/5 border border-white/5 rounded-2xl backdrop-blur-md">
-              <h3 className="font-bold text-white text-lg">{bm.title}</h3>
+              
+              {/* Element 1: Title Trackable Link Wrapper */}
+              <a 
+                href={bm.url} 
+                target="_blank" 
+                rel="noreferrer" 
+                onClick={() => registerLinkClick(bm.id, bm.clicks || 0)}
+                className="group block"
+              >
+                <h3 className="font-bold text-white text-lg group-hover:text-indigo-400 transition-colors inline-block">
+                  {bm.title}
+                </h3>
+              </a>
+
               {bm.category && (
                 <p className="text-indigo-400 text-xs font-semibold uppercase tracking-wider mt-1">{bm.category}</p>
               )}
+              
               {bm.notes && (
                 <p className="text-slate-400 text-sm mt-2 font-medium bg-white/5 p-3 rounded-xl border border-white/5 border-dashed">
                   {bm.notes}
                 </p>
               )}
+              
+              {/* Element 2: Subtext Web Address Trackable Link */}
               <a 
                 href={bm.url} 
                 target="_blank" 
                 rel="noreferrer" 
+                onClick={() => registerLinkClick(bm.id, bm.clicks || 0)}
                 className="text-slate-500 text-sm font-medium hover:text-slate-300 transition-colors truncate block mt-2"
               >
                 {bm.url.replace(/^https?:\/\//, '')}
               </a>
+
             </div>
           ))}
 
