@@ -2,19 +2,22 @@
   "name": "bookmark-manager",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
+  
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+  "dev": "next dev --turbo",
+  "build": "next build",
+  "start": "next start",
+  "lint": "next lint"
+
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
     "lucide-react": "^0.570.0",
     "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -25,5 +28,16 @@
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "description": "This is a Next.js project bootstrapped with create-next-app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EmaniMahesh700/bookmark-manager_emanimahesh.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/EmaniMahesh700/bookmark-manager_emanimahesh/issues"
+  },
+  "homepage": "https://github.com/EmaniMahesh700/bookmark-manager_emanimahesh#readme"
 }
