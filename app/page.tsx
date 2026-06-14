@@ -90,6 +90,21 @@ export default function BookmarkPage() {
     );
   });
 
+  // --- Analytics Dashboard Calculations ---
+  const totalCount = bookmarks.length;
+  const uncategorizedCount = bookmarks.filter(bm => !bm.category || bm.category === "").length;
+  const topCategory = (() => {
+    if (totalCount === 0) return "None";
+    const counts: { [key: string]: number } = {};
+    bookmarks.forEach((bm) => {
+      if (bm.category) {
+        counts[bm.category] = (counts[bm.category] || 0) + 1;
+      }
+    });
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    return sorted.length > 0 ? sorted[0][0] : "None";
+  })();
+
   return (
     <main className="min-h-screen bg-slate-950 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-indigo-900/40 via-slate-950 to-slate-950 p-6 md:p-12">
       <div className="max-w-2xl mx-auto">
@@ -125,6 +140,24 @@ export default function BookmarkPage() {
                 Logout
               </button>
             </div>
+
+            {/* --- Analytics Dashboard Grid --- */}
+            {bookmarks.length > 0 && (
+              <div className="grid grid-cols-3 gap-4 px-2">
+                <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-center backdrop-blur-md">
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">Total</p>
+                  <p className="text-2xl font-black text-white mt-1">{totalCount}</p>
+                </div>
+                <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-center backdrop-blur-md truncate">
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">Top Topic</p>
+                  <p className="text-base font-black text-indigo-400 mt-2 truncate">{topCategory}</p>
+                </div>
+                <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-center backdrop-blur-md">
+                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-slate-500">Inbox</p>
+                  <p className="text-2xl font-black text-amber-500 mt-1">{uncategorizedCount}</p>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={addBookmark} className="bg-white p-8 rounded-3xl shadow-2xl shadow-indigo-950/50 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
