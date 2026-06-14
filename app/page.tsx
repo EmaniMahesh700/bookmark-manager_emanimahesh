@@ -20,6 +20,7 @@ export default function BookmarkPage() {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [category, setCategory] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -78,6 +79,16 @@ export default function BookmarkPage() {
   });
 
   const logout = () => supabase.auth.signOut().then(() => window.location.reload());
+
+  // Real-time client-side search filtering mechanism
+  const filteredBookmarks = bookmarks.filter((bm) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      bm.title.toLowerCase().includes(query) ||
+      bm.url.toLowerCase().includes(query) ||
+      (bm.category && bm.category.toLowerCase().includes(query))
+    );
+  });
 
   return (
     <main className="min-h-screen bg-slate-950 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-indigo-900/40 via-slate-950 to-slate-950 p-6 md:p-12">
@@ -174,8 +185,26 @@ export default function BookmarkPage() {
               </button>
             </form>
 
+            {/* Live Search Input Bar */}
+            {bookmarks.length > 0 && (
+              <div className="relative px-2">
+                <input
+                  type="text"
+                  placeholder="Search by title, url, or category..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full p-4 pl-12 bg-white/5 hover:bg-white/10 focus:bg-white/10 border border-white/10 rounded-2xl text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium"
+                />
+                <div className="absolute inset-y-0 left-0 flex items-center pl-6 pointer-events-none text-slate-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.603 10.603Z" />
+                  </svg>
+                </div>
+              </div>
+            )}
+
             <div className="space-y-4">
-              {bookmarks.map((bm) => (
+              {filteredBookmarks.map((bm) => (
                 <div key={bm.id} className="group relative flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 rounded-2xl transition-all duration-300">
                   <div className="min-w-0 flex-1">
                     <h3 className="font-bold text-white text-lg group-hover:text-indigo-300 transition-colors truncate pr-8">
@@ -205,9 +234,11 @@ export default function BookmarkPage() {
                 </div>
               ))}
               
-              {bookmarks.length === 0 && (
+              {filteredBookmarks.length === 0 && (
                 <div className="text-center py-20 bg-white/5 border-2 border-dashed border-white/5 rounded-3xl">
-                  <p className="text-slate-600 font-bold uppercase tracking-widest text-xs">Library is empty</p>
+                  <p className="text-slate-600 font-bold uppercase tracking-widest text-xs">
+                    {bookmarks.length === 0 ? "Library is empty" : "No matching bookmarks found"}
+                  </p>
                 </div>
               )}
             </div>
