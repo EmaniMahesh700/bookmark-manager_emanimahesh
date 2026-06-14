@@ -10,6 +10,7 @@ interface Bookmark {
   url: string;
   user_id: string;
   category?: string;
+  notes?: string;
 }
 
 const supabase = createClient();
@@ -20,6 +21,7 @@ export default function BookmarkPage() {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [category, setCategory] = useState("");
+  const [notes, setNotes] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -56,11 +58,16 @@ export default function BookmarkPage() {
             title,
             url,
             category,
+            notes,
             user_id: user.id,
           },
         ]);
 
       if (error) throw error;
+      setTitle("");
+      setUrl("");
+      setCategory("");
+      setNotes("");
       window.location.reload();
     } catch (err) {
       console.error("Error:", err);
@@ -80,17 +87,16 @@ export default function BookmarkPage() {
 
   const logout = () => supabase.auth.signOut().then(() => window.location.reload());
 
-  // Real-time client-side search filtering mechanism
   const filteredBookmarks = bookmarks.filter((bm) => {
     const query = searchQuery.toLowerCase();
     return (
       bm.title.toLowerCase().includes(query) ||
       bm.url.toLowerCase().includes(query) ||
-      (bm.category && bm.category.toLowerCase().includes(query))
+      (bm.category && bm.category.toLowerCase().includes(query)) ||
+      (bm.notes && bm.notes.toLowerCase().includes(query))
     );
   });
 
-  // --- Analytics Dashboard Calculations ---
   const totalCount = bookmarks.length;
   const uncategorizedCount = bookmarks.filter(bm => !bm.category || bm.category === "").length;
   const topCategory = (() => {
@@ -141,7 +147,7 @@ export default function BookmarkPage() {
               </button>
             </div>
 
-            {/* --- Analytics Dashboard Grid --- */}
+            {/* Analytics Grid */}
             {bookmarks.length > 0 && (
               <div className="grid grid-cols-3 gap-4 px-2">
                 <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-center backdrop-blur-md">
@@ -187,9 +193,7 @@ export default function BookmarkPage() {
                 </div>
 
                 <div className="space-y-2 md:col-span-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">
-                    Category
-                  </label>
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">Category</label>
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
@@ -201,6 +205,18 @@ export default function BookmarkPage() {
                     <option value="Research">Research</option>
                     <option value="Study">Study</option>
                   </select>
+                </div>
+
+                {/* New Notes Input Field */}
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">Notes / Description</label>
+                  <textarea
+                    placeholder="Add a quick summary, key details, or reminders about this link..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={2}
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-900 font-medium resize-none"
+                  />
                 </div>
 
               </div>
@@ -223,7 +239,7 @@ export default function BookmarkPage() {
               <div className="relative px-2">
                 <input
                   type="text"
-                  placeholder="Search by title, url, or category..."
+                  placeholder="Search by title, url, category, or notes..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full p-4 pl-12 bg-white/5 hover:bg-white/10 focus:bg-white/10 border border-white/10 rounded-2xl text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium"
@@ -238,19 +254,30 @@ export default function BookmarkPage() {
 
             <div className="space-y-4">
               {filteredBookmarks.map((bm) => (
-                <div key={bm.id} className="group relative flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 rounded-2xl transition-all duration-300">
+                <div key={bm.id} className="group relative flex justify-between items-start p-6 bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 rounded-2xl transition-all duration-300">
                   <div className="min-w-0 flex-1">
                     <h3 className="font-bold text-white text-lg group-hover:text-indigo-300 transition-colors truncate pr-8">
                       {bm.title}
                     </h3>
-                    <p className="text-indigo-400 text-xs mt-1 font-semibold uppercase tracking-wider">
-                       {bm.category || "Uncategorized"}
-                    </p>
+                    
+                    <div className="flex items-center gap-3 mt-1">
+                      <p className="text-indigo-400 text-xs font-semibold uppercase tracking-wider">
+                         {bm.category || "Uncategorized"}
+                      </p>
+                    </div>
+
+                    {/* Displaying Saved Notes If Present */}
+                    {bm.notes && (
+                      <p className="text-slate-400 text-sm mt-2 font-medium bg-white/5 p-3 rounded-xl border border-white/5 border-dashed max-w-xl">
+                        {bm.notes}
+                      </p>
+                    )}
+
                     <a 
                       href={bm.url} 
                       target="_blank" 
                       rel="noreferrer" 
-                      className="text-slate-500 text-sm font-medium hover:text-slate-300 transition-colors truncate block mt-1"
+                      className="text-slate-500 text-sm font-medium hover:text-slate-300 transition-colors truncate block mt-2"
                     >
                       {bm.url.replace(/^https?:\/\//, '')}
                     </a>
@@ -258,7 +285,7 @@ export default function BookmarkPage() {
                   
                   <button 
                     onClick={() => deleteBookmark(bm.id)} 
-                    className="p-3 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                    className="p-3 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100 shrink-0"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
