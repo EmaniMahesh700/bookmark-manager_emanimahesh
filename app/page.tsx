@@ -12,7 +12,7 @@ interface Bookmark {
   category?: string;
   notes?: string;
   is_public?: boolean;
-  clicks?: number; // Added to support future metrics tracking
+  clicks?: number; 
 }
 
 const supabase = createClient();
@@ -300,18 +300,19 @@ export default function BookmarkPage() {
 
             <form onSubmit={addBookmark} className="bg-white p-8 rounded-3xl shadow-2xl space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                {/* Fixed Overlap Textarea Title Field */}
+                <div className="space-y-2 md:col-span-1">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">Title</label>
-                  <input 
-                    type="text" 
+                  <textarea 
                     placeholder="Project Inspiration" 
                     value={title} 
                     onChange={(e) => setTitle(e.target.value)} 
                     required 
-                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-medium" 
+                    rows={2}
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-medium resize-none min-h-[58px]" 
                   />
                 </div>
-                <div className="space-y-2">
+                <div className="space-y-2 md:col-span-1">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">URL</label>
                   <input 
                     type="url" 
@@ -319,7 +320,7 @@ export default function BookmarkPage() {
                     value={url} 
                     onChange={(e) => handleUrlChangeAndScrape(e.target.value)} 
                     required 
-                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-medium" 
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-medium h-[58px] mt-0.5" 
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
