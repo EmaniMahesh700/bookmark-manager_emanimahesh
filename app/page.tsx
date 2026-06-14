@@ -84,14 +84,13 @@ export default function BookmarkPage() {
       <div className="max-w-2xl mx-auto">
         
         {!user ? (
-          /* --- Auth State Container --- */
           <div className="flex flex-col items-center justify-center py-24 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 px-10 text-center shadow-2xl">
             <div className="w-20 h-20 bg-gradient-to-tr from-indigo-600 to-violet-400 rounded-3xl flex items-center justify-center mb-8 shadow-2xl shadow-indigo-500/20">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="white" className="w-10 h-10">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z" />
               </svg>
             </div>
-            <h1 className="text-4xl font-black text-white mb-3 tracking-tight">Bookmarks Test 999</h1>
+            <h1 className="text-4xl font-black text-white mb-3 tracking-tight">Bookmarks</h1>
             <p className="text-slate-400 text-lg mb-10 max-w-sm">Securely store and organize your most important web links.</p>
             <button 
               onClick={login} 
@@ -103,7 +102,6 @@ export default function BookmarkPage() {
         ) : (
           <div className="space-y-12">
             
-            /* --- Header Block --- */
             <div className="flex justify-between items-center px-2">
               <div>
                 <h1 className="text-3xl font-black text-white tracking-tighter italic">Bookmarks.</h1>
@@ -117,72 +115,65 @@ export default function BookmarkPage() {
               </button>
             </div>
 
-            /* --- Creation Form --- */
             <form onSubmit={addBookmark} className="bg-white p-8 rounded-3xl shadow-2xl shadow-indigo-950/50 space-y-6">
-  {/* Input Fields Grid Group */}
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    
-    {/* Title Input Field */}
-    <div className="space-y-2">
-      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">Title</label>
-      <input
-        type="text"
-        placeholder="Project Inspiration"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        required
-        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-900 font-medium"
-      />
-    </div>
-    
-    {/* URL Input Field */}
-    <div className="space-y-2">
-      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">URL</label>
-      <input
-        type="url"
-        placeholder="https://..."
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        required
-        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-900 font-medium"
-      />
-    </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">Title</label>
+                  <input
+                    type="text"
+                    placeholder="Project Inspiration"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    required
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-900 font-medium"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">URL</label>
+                  <input
+                    type="url"
+                    placeholder="https://..."
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    required
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-900 font-medium"
+                  />
+                </div>
 
-    {/* Category Dropdown (Moved inside the layout container with md:col-span-2) */}
-    <div className="space-y-2 md:col-span-2">
-      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">
-        Category
-      </label>
-      <select
-        value={category}
-        onChange={(e) => setCategory(e.target.value)}
-        className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-      >
-        <option value="" className="text-slate-500">Select Category</option>
-        <option value="Programming">Programming</option>
-        <option value="AI">AI</option>
-        <option value="Research">Research</option>
-        <option value="Study">Study</option>
-      </select>
-    </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">
+                    Category
+                  </label>
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                  >
+                    <option value="" className="text-slate-500">Select Category</option>
+                    <option value="Programming">Programming</option>
+                    <option value="AI">AI</option>
+                    <option value="Research">Research</option>
+                    <option value="Study">Study</option>
+                  </select>
+                </div>
 
-  </div>
+              </div>
 
-  {/* Submit Action Button */}
-  <button
-    type="submit"
-    disabled={isSubmitting}
-    className={`w-full py-4 rounded-2xl font-black uppercase tracking-[0.3em] text-xs transition-all ${
-      isSubmitting 
-      ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-      : 'bg-slate-900 hover:bg-indigo-600 text-white shadow-xl shadow-indigo-200/20 active:scale-[0.99]'
-    }`}
-  >
-    {isSubmitting ? "Syncing..." : "Add Bookmark"}
-  </button>
-</form>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={`w-full py-4 rounded-2xl font-black uppercase tracking-[0.3em] text-xs transition-all ${
+                  isSubmitting 
+                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                  : 'bg-slate-900 hover:bg-indigo-600 text-white shadow-xl shadow-indigo-200/20 active:scale-[0.99]'
+                }`}
+              >
+                {isSubmitting ? "Syncing..." : "Add Bookmark"}
+              </button>
+            </form>
 
-            /* --- Bookmark Grid/List --- */
             <div className="space-y-4">
               {bookmarks.map((bm) => (
                 <div key={bm.id} className="group relative flex justify-between items-center p-6 bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 rounded-2xl transition-all duration-300">
