@@ -42,9 +42,17 @@ export default function SharedLibraryPage() {
   }, [userId]);
 
   const registerLinkClick = async (bookmarkId: string, currentClicks: number) => {
+    const nextClicks = (currentClicks || 0) + 1;
+
+    // FIX: Optimistically update local React UI state immediately so rapid clicks don't cause race conditions
+    setBookmarks((prev) =>
+      prev.map((bm) => (bm.id === bookmarkId ? { ...bm, clicks: nextClicks } : bm))
+    );
+
+    // Save the new telemetry value to Supabase
     await supabase
       .from("bookmarks")
-      .update({ clicks: (currentClicks || 0) + 1 })
+      .update({ clicks: nextClicks })
       .eq("id", bookmarkId);
   };
 

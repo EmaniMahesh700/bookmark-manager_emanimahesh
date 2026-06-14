@@ -99,6 +99,7 @@ export default function BookmarkPage() {
             notes,
             user_id: user.id,
             is_public: false, // Private by default
+            clicks: 0,        // FIX: Forces baseline click integers to start clean
           },
         ]);
 
@@ -182,6 +183,7 @@ export default function BookmarkPage() {
           notes: bm.notes || "",
           user_id: user?.id,
           is_public: false,
+          clicks: Number(bm.clicks || 0), // FIX: Retains tracking data maps on backup restores
         }));
 
         const { error } = await supabase.from("bookmarks").insert(bookmarksToInsert);
