@@ -87,6 +87,60 @@ export default function BookmarkPage() {
 
   const logout = () => supabase.auth.signOut().then(() => window.location.reload());
 
+  // --- Export Bookmarks Function ---
+  const exportBookmarks = () => {
+    if (bookmarks.length === 0) {
+      alert("No bookmarks available to export!");
+      return;
+    }
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(bookmarks, null, 2));
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `bookmarks_backup_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  // --- Import Bookmarks Function ---
+  const handleImportJson = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileReader = new FileReader();
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    setIsSubmitting(true);
+    fileReader.readAsText(e.target.files[0], "UTF-8");
+    
+    fileReader.onload = async (event) => {
+      try {
+        const parsedData = JSON.parse(event.target?.result as string);
+        
+        if (!Array.isArray(parsedData)) {
+          alert("Invalid file format. Must be a JSON array of bookmarks.");
+          setIsSubmitting(false);
+          return;
+        }
+
+        const bookmarksToInsert = parsedData.map((bm: any) => ({
+          title: bm.title || "Untitled Import",
+          url: bm.url || "https://",
+          category: bm.category || "",
+          notes: bm.notes || "",
+          user_id: user?.id,
+        }));
+
+        const { error } = await supabase.from("bookmarks").insert(bookmarksToInsert);
+        if (error) throw error;
+        
+        alert(`Successfully imported ${bookmarksToInsert.length} bookmarks!`);
+        window.location.reload();
+      } catch (err) {
+        console.error("Import error:", err);
+        alert("Failed to parse or upload the JSON file. Check your file format.");
+        setIsSubmitting(false);
+      }
+    };
+  };
+
   const filteredBookmarks = bookmarks.filter((bm) => {
     const query = searchQuery.toLowerCase();
     return (
@@ -165,6 +219,27 @@ export default function BookmarkPage() {
               </div>
             )}
 
+            {/* --- Data Import/Export Backup Utilities Bar --- */}
+            {bookmarks.length > 0 && (
+              <div className="flex items-center gap-4 px-2">
+                <button
+                  onClick={exportBookmarks}
+                  className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-slate-300 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                >
+                  📥 Export JSON
+                </button>
+                <label className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-slate-300 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer text-center">
+                  📤 Import JSON
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportJson}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            )}
+
             <form onSubmit={addBookmark} className="bg-white p-8 rounded-3xl shadow-2xl shadow-indigo-950/50 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 
@@ -207,7 +282,6 @@ export default function BookmarkPage() {
                   </select>
                 </div>
 
-                {/* New Notes Input Field */}
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">Notes / Description</label>
                   <textarea
@@ -266,7 +340,6 @@ export default function BookmarkPage() {
                       </p>
                     </div>
 
-                    {/* Displaying Saved Notes If Present */}
                     {bm.notes && (
                       <p className="text-slate-400 text-sm mt-2 font-medium bg-white/5 p-3 rounded-xl border border-white/5 border-dashed max-w-xl">
                         {bm.notes}
