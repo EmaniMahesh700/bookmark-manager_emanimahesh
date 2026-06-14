@@ -11,6 +11,7 @@ interface Bookmark {
   user_id: string;
   category?: string;
   notes?: string;
+  is_public?: boolean;
 }
 
 const supabase = createClient();
@@ -24,10 +25,6 @@ export default function BookmarkPage() {
   const [notes, setNotes] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    console.log("Selected Category:", category);
-  }, [category]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -50,7 +47,6 @@ export default function BookmarkPage() {
     setIsSubmitting(true);
 
     try {
-      console.log("Category =", category);
       const { error } = await supabase
         .from("bookmarks")
         .insert([
@@ -60,6 +56,7 @@ export default function BookmarkPage() {
             category,
             notes,
             user_id: user.id,
+            is_public: false, // Private by default
           },
         ]);
 
@@ -75,19 +72,29 @@ export default function BookmarkPage() {
     }
   };
 
+  const togglePublicStatus = async (id: string, currentStatus: boolean) => {
+    const { error } = await supabase
+      .from("bookmarks")
+      .update({ is_public: !currentStatus })
+      .eq("id", id);
+      
+    if (!error) {
+      setBookmarks(bookmarks.map(bm => bm.id === id ? { ...bm, is_public: !currentStatus } : bm));
+    }
+  };
+
   const deleteBookmark = async (id: string) => {
     const { error } = await supabase.from("bookmarks").delete().eq("id", id);
     if (!error) window.location.reload();
   };
 
-  const login = () => supabase.auth.signInWithOAuth({ 
-    provider: "google",
-    options: { redirectTo: typeof window !== "undefined" ? window.location.origin : "" } 
-  });
+  const copyShareLink = () => {
+    if (!user) return;
+    const shareUrl = `${window.location.origin}/shared/${user.id}`;
+    navigator.clipboard.writeText(shareUrl);
+    alert("Copied your public profile share URL to clipboard!");
+  };
 
-  const logout = () => supabase.auth.signOut().then(() => window.location.reload());
-
-  // --- Export Bookmarks Function ---
   const exportBookmarks = () => {
     if (bookmarks.length === 0) {
       alert("No bookmarks available to export!");
@@ -102,7 +109,6 @@ export default function BookmarkPage() {
     downloadAnchor.remove();
   };
 
-  // --- Import Bookmarks Function ---
   const handleImportJson = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileReader = new FileReader();
     if (!e.target.files || e.target.files.length === 0) return;
@@ -113,9 +119,8 @@ export default function BookmarkPage() {
     fileReader.onload = async (event) => {
       try {
         const parsedData = JSON.parse(event.target?.result as string);
-        
         if (!Array.isArray(parsedData)) {
-          alert("Invalid file format. Must be a JSON array of bookmarks.");
+          alert("Invalid file format.");
           setIsSubmitting(false);
           return;
         }
@@ -126,20 +131,25 @@ export default function BookmarkPage() {
           category: bm.category || "",
           notes: bm.notes || "",
           user_id: user?.id,
+          is_public: false,
         }));
 
         const { error } = await supabase.from("bookmarks").insert(bookmarksToInsert);
         if (error) throw error;
-        
-        alert(`Successfully imported ${bookmarksToInsert.length} bookmarks!`);
         window.location.reload();
       } catch (err) {
-        console.error("Import error:", err);
-        alert("Failed to parse or upload the JSON file. Check your file format.");
+        console.error(err);
         setIsSubmitting(false);
       }
     };
   };
+
+  const login = () => supabase.auth.signInWithOAuth({ 
+    provider: "google",
+    options: { redirectTo: typeof window !== "undefined" ? window.location.origin : "" } 
+  });
+
+  const logout = () => supabase.auth.signOut().then(() => window.location.reload());
 
   const filteredBookmarks = bookmarks.filter((bm) => {
     const query = searchQuery.toLowerCase();
@@ -157,9 +167,7 @@ export default function BookmarkPage() {
     if (totalCount === 0) return "None";
     const counts: { [key: string]: number } = {};
     bookmarks.forEach((bm) => {
-      if (bm.category) {
-        counts[bm.category] = (counts[bm.category] || 0) + 1;
-      }
+      if (bm.category) counts[bm.category] = (counts[bm.category] || 0) + 1;
     });
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
     return sorted.length > 0 ? sorted[0][0] : "None";
@@ -178,10 +186,7 @@ export default function BookmarkPage() {
             </div>
             <h1 className="text-4xl font-black text-white mb-3 tracking-tight">Bookmarks</h1>
             <p className="text-slate-400 text-lg mb-10 max-w-sm">Securely store and organize your most important web links.</p>
-            <button 
-              onClick={login} 
-              className="w-full py-4 px-8 bg-white hover:bg-indigo-50 text-slate-950 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 active:scale-[0.98] shadow-xl"
-            >
+            <button onClick={login} className="w-full py-4 px-8 bg-white text-slate-950 rounded-2xl font-bold transition-all shadow-xl">
               Sign in with Google
             </button>
           </div>
@@ -196,9 +201,14 @@ export default function BookmarkPage() {
                   <p className="text-xs font-bold text-indigo-400 uppercase tracking-widest">{bookmarks.length} Saved Items</p>
                 </div>
               </div>
-              <button onClick={logout} className="px-4 py-2 rounded-xl bg-white/5 hover:bg-red-500/10 text-slate-400 hover:text-red-400 text-xs font-black uppercase tracking-widest transition-all border border-white/5">
-                Logout
-              </button>
+              <div className="flex gap-2">
+                <button onClick={copyShareLink} className="px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-black uppercase tracking-widest transition-all">
+                  🔗 Share Profile
+                </button>
+                <button onClick={logout} className="px-4 py-2 rounded-xl bg-white/5 hover:bg-red-500/10 text-slate-400 text-xs font-black uppercase tracking-widest transition-all border border-white/5">
+                  Logout
+                </button>
+              </div>
             </div>
 
             {/* Analytics Grid */}
@@ -219,91 +229,45 @@ export default function BookmarkPage() {
               </div>
             )}
 
-            {/* --- Data Import/Export Backup Utilities Bar --- */}
+            {/* Import/Export Utility buttons */}
             {bookmarks.length > 0 && (
               <div className="flex items-center gap-4 px-2">
-                <button
-                  onClick={exportBookmarks}
-                  className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-slate-300 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2"
-                >
+                <button onClick={exportBookmarks} className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-slate-300 font-bold text-xs uppercase tracking-wider transition-all">
                   📥 Export JSON
                 </button>
-                <label className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-slate-300 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer text-center">
+                <label className="flex-1 py-3 px-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-slate-300 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer text-center">
                   📤 Import JSON
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={handleImportJson}
-                    className="hidden"
-                  />
+                  <input type="file" accept=".json" onChange={handleImportJson} className="hidden" />
                 </label>
               </div>
             )}
 
-            <form onSubmit={addBookmark} className="bg-white p-8 rounded-3xl shadow-2xl shadow-indigo-950/50 space-y-6">
+            <form onSubmit={addBookmark} className="bg-white p-8 rounded-3xl shadow-2xl space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">Title</label>
-                  <input
-                    type="text"
-                    placeholder="Project Inspiration"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    required
-                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-900 font-medium"
-                  />
+                  <input type="text" placeholder="Project Inspiration" value={title} onChange={(e) => setTitle(e.target.value)} required className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-medium" />
                 </div>
-                
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">URL</label>
-                  <input
-                    type="url"
-                    placeholder="https://..."
-                    value={url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    required
-                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-900 font-medium"
-                  />
+                  <input type="url" placeholder="https://..." value={url} onChange={(e) => setUrl(e.target.value)} required className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-medium" />
                 </div>
-
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">Category</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                  >
-                    <option value="" className="text-slate-500">Select Category</option>
+                  <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium outline-none">
+                    <option value="">Select Category</option>
                     <option value="Programming">Programming</option>
                     <option value="AI">AI</option>
                     <option value="Research">Research</option>
                     <option value="Study">Study</option>
                   </select>
                 </div>
-
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1 block">Notes / Description</label>
-                  <textarea
-                    placeholder="Add a quick summary, key details, or reminders about this link..."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={2}
-                    className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-slate-900 font-medium resize-none"
-                  />
+                  <textarea placeholder="Add a quick summary..." value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none text-slate-900 font-medium resize-none" />
                 </div>
-
               </div>
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`w-full py-4 rounded-2xl font-black uppercase tracking-[0.3em] text-xs transition-all ${
-                  isSubmitting 
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                  : 'bg-slate-900 hover:bg-indigo-600 text-white shadow-xl shadow-indigo-200/20 active:scale-[0.99]'
-                }`}
-              >
+              <button type="submit" disabled={isSubmitting} className="w-full py-4 rounded-2xl font-black uppercase tracking-[0.3em] text-white bg-slate-900 hover:bg-indigo-600 text-xs transition-all">
                 {isSubmitting ? "Syncing..." : "Add Bookmark"}
               </button>
             </form>
@@ -311,69 +275,38 @@ export default function BookmarkPage() {
             {/* Live Search Input Bar */}
             {bookmarks.length > 0 && (
               <div className="relative px-2">
-                <input
-                  type="text"
-                  placeholder="Search by title, url, category, or notes..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full p-4 pl-12 bg-white/5 hover:bg-white/10 focus:bg-white/10 border border-white/10 rounded-2xl text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium"
-                />
-                <div className="absolute inset-y-0 left-0 flex items-center pl-6 pointer-events-none text-slate-500">
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.603 10.603Z" />
-                  </svg>
-                </div>
+                <input type="text" placeholder="Search parameters..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full p-4 pl-12 bg-white/5 border border-white/10 rounded-2xl text-white outline-none" />
               </div>
             )}
 
             <div className="space-y-4">
               {filteredBookmarks.map((bm) => (
-                <div key={bm.id} className="group relative flex justify-between items-start p-6 bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/5 rounded-2xl transition-all duration-300">
+                <div key={bm.id} className="group relative flex justify-between items-start p-6 bg-white/5 border border-white/5 rounded-2xl transition-all">
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-bold text-white text-lg group-hover:text-indigo-300 transition-colors truncate pr-8">
-                      {bm.title}
-                    </h3>
-                    
+                    <h3 className="font-bold text-white text-lg truncate pr-8">{bm.title}</h3>
                     <div className="flex items-center gap-3 mt-1">
-                      <p className="text-indigo-400 text-xs font-semibold uppercase tracking-wider">
-                         {bm.category || "Uncategorized"}
-                      </p>
+                      <p className="text-indigo-400 text-xs font-semibold uppercase tracking-wider">{bm.category || "Uncategorized"}</p>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${bm.is_public ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-500/10 text-slate-400'}`}>
+                        {bm.is_public ? "Public" : "Private"}
+                      </span>
                     </div>
-
-                    {bm.notes && (
-                      <p className="text-slate-400 text-sm mt-2 font-medium bg-white/5 p-3 rounded-xl border border-white/5 border-dashed max-w-xl">
-                        {bm.notes}
-                      </p>
-                    )}
-
-                    <a 
-                      href={bm.url} 
-                      target="_blank" 
-                      rel="noreferrer" 
-                      className="text-slate-500 text-sm font-medium hover:text-slate-300 transition-colors truncate block mt-2"
-                    >
+                    {bm.notes && <p className="text-slate-400 text-sm mt-2 bg-white/5 p-3 rounded-xl border border-white/5 border-dashed max-w-xl">{bm.notes}</p>}
+                    <a href={bm.url} target="_blank" rel="noreferrer" className="text-slate-500 text-sm font-medium hover:text-slate-300 transition-colors truncate block mt-2">
                       {bm.url.replace(/^https?:\/\//, '')}
                     </a>
                   </div>
                   
-                  <button 
-                    onClick={() => deleteBookmark(bm.id)} 
-                    className="p-3 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100 shrink-0"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                    </svg>
-                  </button>
+                  <div className="flex gap-1 shrink-0">
+                    {/* Public/Private Status Toggle Slider Button */}
+                    <button onClick={() => togglePublicStatus(bm.id, !!bm.is_public)} className={`p-3 rounded-xl transition-all ${bm.is_public ? 'text-emerald-400 bg-emerald-500/5' : 'text-slate-500 hover:text-white'}`} title={bm.is_public ? "Make Private" : "Make Public"}>
+                      {bm.is_public ? "🔓" : "🔒"}
+                    </button>
+                    <button onClick={() => deleteBookmark(bm.id)} className="p-3 text-slate-600 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all opacity-0 group-hover:opacity-100">
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               ))}
-              
-              {filteredBookmarks.length === 0 && (
-                <div className="text-center py-20 bg-white/5 border-2 border-dashed border-white/5 rounded-3xl">
-                  <p className="text-slate-600 font-bold uppercase tracking-widest text-xs">
-                    {bookmarks.length === 0 ? "Library is empty" : "No matching bookmarks found"}
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         )}
