@@ -72,15 +72,26 @@ export default function BookmarkPage() {
     }
   };
 
+  // --- Fixed Type-Safe Toggle Public Status Function ---
   const togglePublicStatus = async (id: string, currentStatus: boolean) => {
+    const nextStatus = !currentStatus;
+    
+    // 1. Instantly update the backend Supabase database
     const { error } = await supabase
       .from("bookmarks")
-      .update({ is_public: !currentStatus })
+      .update({ is_public: nextStatus })
       .eq("id", id);
       
-    if (!error) {
-      setBookmarks(bookmarks.map(bm => bm.id === id ? { ...bm, is_public: !currentStatus } : bm));
+    if (error) {
+      console.error("Failed to update status in Supabase:", error);
+      alert("Error saving privacy setting to database.");
+      return;
     }
+    
+    // 2. Reactively update the local client state arrays
+    setBookmarks((prev) =>
+      prev.map((bm) => (bm.id === id ? { ...bm, is_public: nextStatus } : bm))
+    );
   };
 
   const deleteBookmark = async (id: string) => {
