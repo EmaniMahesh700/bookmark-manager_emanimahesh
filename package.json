@@ -3,13 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  
-  "scripts": {
-  "dev": "next dev --turbo",
-  "build": "next build",
-  "start": "next start",
-  "lint": "next lint"
-
+"scripts": {
+    "dev": "start http://localhost:3000 && next dev --turbo",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
@@ -26,6 +24,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "open-cli": "^9.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
